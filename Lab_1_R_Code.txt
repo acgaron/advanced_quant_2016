@@ -1,0 +1,59 @@
+#remember this from the lecture? This is how I tell R to ignore anything after a hashtag. it becomes very valuable for keeping track of your code!
+
+#this is the import command. You will not remember this because we just used import file from the upper right.
+nbastats_advanced_quant <- read.csv("~/Documents/The_New_School_M.S./Fall_2015/Independent_Study/nbastats_advanced_quant.csv")
+
+#This command lets us see our data. As discussed, it is the only command I can think of that actually is capitalized 
+
+View(nbastats_advanced_quant)
+
+#this command gets the structure of our data. It tells us how many columns we have (variables) and how many rows we have *(observations)
+#it will also tell us what kind of data we are working with. Rememeber numerical vs character? This is how we get that info (initially)
+
+str(nbastats_advanced_quant)
+
+#this command was a trick! all new objects that we create must be on the LEFT side of the <-. The Right side consists of the functions we want to use to create this new object.
+#this command will return red
+
+nbastats_advanced_quant <- nba
+
+#this is the actual command that will allow us to rename our objects to something more managable. Here we renamed nbastats_advanced_quant
+#to nba for ease.
+
+nba <- nbastats_advanced_quant
+
+#say we want to know how many players play for each NBA team. we will create a frequency table. Don't forget you need dataframe$variable you want to work with.
+
+table(nba$Tm)
+
+#the above will just print out our results in the console window. what if we want to create it as a new object that we can work with?
+
+team_table <- table(nba$Tm)
+
+#this allows us to store our new table as a object that we can recall whenever we want.
+
+#to see this object, we type:
+
+View(team_table)
+
+#now we can see it in the console.
+
+#if we want to export our new table out of R, we write a .csv file
+
+write.csv(team_table, file = "Team Table.csv")
+
+#we can also look at individual variables. if we want a brief summary, we just use the summary command, like below. here we will look at summary statistics of points scored in the nba
+
+summary(nba$PTS)
+
+#great! but what if we want to know the players that averaged more than 20 points last year? we will create a subset function.
+#the subset function is a great way to break down your data to analyze what you care about, while leaving the main dataframe intact.
+#this creates a new objec that we can use and analyze as we please.
+
+top_ten <- subset(nba, PTS > 20)
+
+#now if we want to view our new dataset, we use 
+
+View(top_ten)
+
+#and there we go! that concludes our R code for today. 

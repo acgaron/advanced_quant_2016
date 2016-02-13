@@ -1,0 +1,82 @@
+#lab 2 R code 
+
+#this code is what we covered in Lab #2 last wednesday. Remember, # means that it is a comment. The reason why we store these scripts as a text file is #because I can copy paste this in to my R, and it will run the exact analysis we did in class. You also can copy paste everything below the #--------- #and do it yourself, however, I recommend entering it in line by line to gain familiarity with the process. Remember how I said we never save anything #in R proper? That is because we save everything in these scripts, that allow us to perserve the power of our analysis without having to modify the #original data. That way, nothing we do in R actually affects the original data, which is great if we make a mistake. 
+
+
+#get the data in there! THIS WILL BE DIFFERENT FOR EACH OF YOU. YOU SHOULD USE THE IMPORT DATA FUNCTION IN THE UPPER RIGHT AS OPPOSED TO THE COMMAND #LINE. However, this is how it would look if you were to use the command line (your file paths would be different)
+
+lab2_data.csv <- read.csv("~/Documents/The_New_School_M.S./Spring 2016/Advanced_Quant_TA/lab2_data.csv")
+View(lab2_data)
+
+#Now we are ready to work with our data. Let's rename it to be a little bit more relevant.
+
+#------------------
+
+nyc_data <- lab2_data
+
+#how do we find the structure of our data? The str() command tells us the type of variables we are working with, (nominal = factors, ordinal = factors, continuous = numerical/integers)
+
+str(nyc_data)
+
+#what if we want the summary statistics of a specific variable?
+
+summary(nyc_data$obesity)
+
+#what if we want the summary statistics of the entire dataset? (not recommended for 20+ variable datasets)
+
+summary(nyc_data)
+
+#now, lets move beyond simple functions and actual do some actual statistics. Lets correlate two variables.
+
+cor(nyc_data$median_income, nyc_data$teen_birth)
+
+#This will print out the Pearson's R score right below !
+
+#what if we want to know the correlation's scores for the entire set of variables? We could just do it like we did above. But, that would print out a #very big table. So, instead we are going to create a new table as a object that is composed of Pearson's R scores.
+
+nyc_corr <- cor(nyc_data)
+
+#notice that we can't == because there is a still a variable that is not numerical, so we have to get rid of it! #the command below is how to remove a specific variable.
+
+nyc_data$CD <- NULL
+
+View(nyc_data)
+
+#now we can continue with our analysis, since our dataset is ready. 
+
+nyc_corr <- cor(nyc_data)
+
+#While the cor() function is great, what if we want p values in our correlation tables? We need to use a function that someone wrote to give us both #values. This is an example of a very important function in R -- you can write your own mathematical functions ! I did not write this, and we won't go #into much depth on writing functions, but this is an example of one that is quite useful. To use this function, copy paste the entire amount from       #cor.prob to the bracket }.  
+
+cor.prob <- function (X, dfr = nrow(X) - 2) {
+  R <- cor(X, use="pairwise.complete.obs")
+  above <- row(R) < col(R)
+  r2 <- R[above]^2
+  Fstat <- r2 * dfr/(1 - r2)
+  R[above] <- 1 - pf(Fstat, 1, dfr)
+  R[row(R) == col(R)] <- NA
+  R
+}
+
+#Now we can use this to create a table that gives us both Pearson's R coefficients and their corresponding p-values. Please note that p-values are above #the NAs, and the Pearson Coefficients are below the NAs. The p-values will be in scientific notation.
+
+nyc_corr_prob <- cor.prob(nyc_data)
+
+View(nyc_corr_prob)
+
+#now let's export this table into excel so we can get those p-values to a more friendly format.
+
+write.csv(nyc_corr_prob, file = "nyc data correlations.csv")
+
+#this file will now be on your computer, do a search for it and open it up with excel or numbers or google docs spreadsheets.
+
+
+#here is how we do a simple plot
+
+plot(nyc_data$median_income)
+
+#here is how we do a simple histogram
+
+hist(nyc_data$median_income)
+
+#The end!
