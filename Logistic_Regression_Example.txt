@@ -1,0 +1,162 @@
+#regression notes script
+
+#packages being used (install only needs to be done once)
+
+install.packages("gmodels")
+install.packages("psych") #should already have this one, so just in case.
+install.packages("SDMTools")
+install.packages("pROC")
+install.packages("LogisticDx")
+
+
+#DO THESE EVERY TIME YOU CLOSE R.
+options(scipen=999) #need this one every time you close R removes scientific notation
+library("psych")
+library("gmodels")
+library("SDMTools")
+library("pROC")
+library("LogisticDx")
+
+#we will also be using some functions, which I have taken the time to write for you. also enter these every time.
+
+logisticPseudoR2s <- function(LogModel) {
+	dev <- LogModel$deviance
+	nullDev <- LogModel$null.deviance
+	modelN <- length(LogModel$fitted.values)
+	R.l <- 1 - dev / nullDev
+	R.cs <- 1 - exp ( -(nullDev - dev) / modelN)
+	R.n <- R.cs / (1 - ( exp (-(nullDev / modelN))))
+	cat("Pseudo R^2 for Logistic Regression\n")
+	cat("Hosmer and Lemeshow R^2 ", round(R.l, 3), "\n")
+	cat("Cox and Snell R^2       ", round(R.cs, 3), "\n")
+	cat("Nagelkerke R^2          ", round(R.n, 3),     "\n")
+}
+
+
+modelsig <- function(LogModel) {
+    modelChi <- LogModel$null.deviance - LogModel$deviance
+    chidf <- LogModel$df.null - LogModel$df.residual
+    chisq.prob <- 1 - pchisq(modelChi, chidf)
+    cat("Significance: ", round(chisq.prob, 5), "\n")
+}
+
+#now onto the analysis
+#lets import that data into the dataset. 
+
+icu <- read.csv("~/Documents/The_New_School_M.S./Spring_2016/Advanced_Quant_TA/logistic regression assignment/log_example_lab/icu.csv")
+View(icu)
+
+#lets create a table of the continuous variables we want to describe.
+
+
+describe(icu$AGE)
+table(icu$STA)
+table(icu$TYP)
+table(icu$LOC)
+table(icu$CPR)
+table(icu$INF)
+
+
+#lets check our crosstab. This is very useful for categorical data.
+
+#let's refer to a package that will make our output much easier to read and more managable. 
+
+
+CrossTable(icu$LOC, icu$STA, expected = TRUE, format="SPSS")
+
+CrossTable(icu$TYP, icu$STA, expected = TRUE, format="SPSS")
+
+CrossTable(icu$CPR, icu$STA, expected = TRUE, format="SPSS")
+
+CrossTable(icu$INF, icu$STA, expected = TRUE, format="SPSS")
+
+# we always have to be aware of any data cleaning we need to do before we conduct our analysis. 
+#we need our Y variable to be a factor. Right now it is an integer, so we will change that.
+
+icu$STA <- as.factor(icu$STA)
+
+#we also need to make the Level of Consciousness (LOC) variable a dummy variable as opposed to categorical. 
+icu$NORM <- ifelse(icu$LOC == 0, 1, 0)
+icu$STUP <- ifelse(icu$LOC == 1, 1, 0)
+icu$COMA <- ifelse(icu$LOC == 2, 1, 0)
+
+#now we build!
+
+icu_1 <- glm(STA~TYP,data=icu,family=binomial())
+summary(icu_1)
+
+#odds ratios
+exp(coef(icu_1)) # exponentiated coefficients
+
+#diagnostics
+modelsig(icu_1)
+logisticPseudoR2s(icu_1)
+
+#create the probability for each observation
+icu$predicted_probabilities_1 <- fitted(icu_1)
+
+#how did we do?
+confusion.matrix(icu$STA, icu$predicted_probabilities_1, threshold = 0.5)
+
+#let's continue to improve our model.
+
+icu_2 <- glm(STA~TYP + STUP,data=icu,family=binomial())
+summary(icu_2)
+exp(coef(icu_2)) # exponentiated coefficients
+
+icu_3 <- glm(STA~TYP + COMA,data=icu,family=binomial())
+summary(icu_3)
+exp(coef(icu_3)) # exponentiated coefficients
+
+icu_4 <- glm(STA~TYP + COMA + AGE,data=icu,family=binomial())
+summary(icu_4)
+exp(coef(icu_4)) # exponentiated coefficients
+
+icu_5 <- glm(STA~TYP + COMA + AGE + CPR,data=icu,family=binomial())
+summary(icu_5)
+exp(coef(icu_5)) # exponentiated coefficients
+
+icu_6 <- glm(STA~TYP + COMA + AGE + INF,data=icu,family=binomial())
+summary(icu_6)
+exp(coef(icu_6)) # exponentiated coefficients
+
+#diagnostics
+modelsig(icu_6)
+logisticPseudoR2s(icu_6)
+
+#for this final model, let's check our hosmer lemeshow goodness of fit test in more detail.
+
+gof(icu_6, g=10, plotROC = FALSE)
+
+#create the probability for each observation
+icu$predicted_probabilities_6 <- fitted(icu_6)
+
+#how did we do?
+confusion.matrix(icu$STA, icu$predicted_probabilities_6, threshold = 0.5)
+
+quantile(icu$predicted_probabilities_6)
+
+hist(icu$predicted_probabilities_6)
+
+#what if we want to change the threshold of what is considered a 1 (death) or a 0 (life)
+confusion.matrix(icu$STA, icu$predicted_probabilities_6, threshold = 0.25)
+
+#roc curve analysis
+roc_icu <- roc(icu$STA, icu$predicted_probabilities_6)
+
+plot(roc_icu)
+plot.roc(roc_icu)
+
+#interaction effect
+icu$inter_typ_inf <- icu$INF * icu$TYP
+
+
+icu_interaction_model <- glm(STA~COMA + AGE + inter_typ_inf,data=icu,family=binomial())
+summary(icu_interaction_model)
+exp(coef(icu_interaction_model)) # exponentiated coefficients
+
+#diagnostics
+modelsig(icu_interaction_model)
+logisticPseudoR2s(icu_interaction_model)
+
+

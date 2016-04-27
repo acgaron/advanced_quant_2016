@@ -1,0 +1,190 @@
+#regression assignment script.
+
+#this script will look a little bit different than the last one -- it is going to build upon your R skills that you've already developed.  
+#it is designed to push your R skills away from copying and pasting what I've written for you and instead actually applying the function to your datasets.
+#So instead of me supplying a function already written out, instead, I will give the correct function at the beginning of the section 
+#and you will need to use it correctly to get output. For things you haven't seen before, I give an example in the script.
+#I strongly recommend using the code we reviewed in class as an example for this -- use that to check your code and make sure you are on the right track.
+
+
+#The purpose of this assignment is to predict the likelihood that a baby will be born with an unhealthy low birth weight. We have many variables about the mother
+#that can help predict that. Follow the step by step model building instructions in the example presented in class and that we worked through last assignment. Consider
+#what variables you would want to include and rectify that wish list with what you had. Talk about any potential for omitted variable bias. Document your theoretical
+#thought process before you get deep into the data.
+
+#as per last time, start on the R part early so we have plenty of time to deal with any technical problems. 
+#I am available via email and skype for most of spring break, so please reach out with questions. 
+#Please include code you are trying to run with error you receive.
+
+
+#packages being used (install only needs to be done once)
+
+install.packages("gmodels")
+install.packages("psych") #should already have this one, so just in case.
+install.packages("SDMTools")
+install.packages("pROC")
+install.packages("LogisticDx")
+#__________________________________
+
+#DO THESE EVERY TIME YOU CLOSE R.
+options(scipen=999) #need this one every time you close R removes scientific notation
+library("psych")
+library("gmodels")
+library("SDMTools")
+library("pROC")
+library("LogisticDx")
+
+logisticPseudoR2s <- function(LogModel) {
+	dev <- LogModel$deviance
+	nullDev <- LogModel$null.deviance
+	modelN <- length(LogModel$fitted.values)
+	R.l <- 1 - dev / nullDev
+	R.cs <- 1 - exp ( -(nullDev - dev) / modelN)
+	R.n <- R.cs / (1 - ( exp (-(nullDev / modelN))))
+	cat("Pseudo R^2 for Logistic Regression\n")
+	cat("Hosmer and Lemeshow R^2 ", round(R.l, 3), "\n")
+	cat("Cox and Snell R^2       ", round(R.cs, 3), "\n")
+	cat("Nagelkerke R^2          ", round(R.n, 3),     "\n")
+}
+
+modelsig <- function(LogModel) {
+    modelChi <- LogModel$null.deviance - LogModel$deviance
+    chidf <- LogModel$df.null - LogModel$df.residual
+    chisq.prob <- 1 - pchisq(modelChi, chidf)
+    cat("Significance: ", round(chisq.prob, 5), "\n")
+}
+
+lowbwt <- read.csv("~/Documents/The_New_School_M.S./Spring_2016/Advanced_Quant_TA/logistic regression assignment/Log_Assignment/lowbwt.csv")
+
+#now, upload the dataset using the import button in the upper right. 
+
+#let's get a sense of our dataset. Last time, we used the describe function to look at the entire dataset. It was useful because many of the variables were not dummies.
+#however, in the low birth weight dataset, there are many dummy variables, so we will be using the table function to get a sense of their frequencies. remember, in order
+#to get output, you need to specify the dataset$variable (lowbwt$variable). 
+#To see an example of these functions, go to class notes from 3.17
+
+#functions used:
+
+describe()
+table()
+
+#now, we want to see crosstabs between all the dummy variables. See notes from 3.17 for examples.
+
+CrossTable()
+
+#between our regular continuous variables, we want to see their correlation with the target variable.
+
+cor()
+
+#now, we can start thinking about our model. First, we need to make sure that R thinks our model is a factor -- IE, a variable that is either 1 (low birth weight) or 0 (regular weight)
+
+lowbwt$LOW <- as.factor(lowbwt$LOW)
+
+#if you want to use race as a variable in the model, you need to recode it as a dummy variable. 
+#here is a recode as a dummy variable command:
+
+lowbwt$white <- ifelse(lowbwt$RACE == 1, 1, 0)
+lowbwt$black <- ifelse(lowbwt$RACE == 2, 1, 0)
+lowbwt$other <- ifelse(owbwt$RACE == 3, 1, 0)
+
+
+#------------------------------------------
+#MODEL
+
+#this is something we didn't do directly in class: constructing a naive model (ie what are the probabilities of a low bwt baby without any info?) this is called a naive model.
+
+#since we haven't used the glm() function before, I will give an example of its structure. See class notes for help. 
+
+#lowbwt_naive <- glm(LOW~1, data=lowbwt, family=binomial())
+
+lowbwt$predicted_probabilities_naive <- fitted(lowbwt_naive)
+
+confusion.matrix(lowbwt$LOW, lowbwt$predicted_probabilities_naive, threshold = 0.5)
+
+quantile(lowbwt$predicted_probabilities_naive)
+
+#keep track how your confusion matrix / distribution of your probabitilies evolve as you build your model!
+
+#now we add our first variable. how do things change?
+
+lowbwt_1 <- glm(LOW~variable,data=lowbwt,family=binomial())
+
+summary(lowbwt_1)
+
+#odds ratios
+exp(coef(lowbwt_1)) 
+
+#diagnostics
+modelsig(lowbwt_1)
+logisticPseudoR2s(lowbwt_1)
+
+#lets create a new variable based on the probability of low birth weight. 
+
+lowbwt$predicted_probabilities_1 <- fitted(lowbwt_1)
+
+#lets explore the distribution of that likelihood
+
+quantile(lowbwt$predicted_probabilities_1)
+
+#lets see how the model predicted low birth weight using a confusion matrix. This compares your predictions to the actual outcomes of the model. 
+
+confusion.matrix(lowbwt$LOW, lowbwt$predicted_probabilities_1, threshold = 0.5)
+
+#what do you notice?
+
+#------------------------
+#CONTINUE TO BUILD YOUR MODEL, ADDING THE VARIABLES YOU'VE DECIDED TO INCLUDE ONE BY ONE. NAME THE DIFFERENT ITERATIONS OF THE MODEL AS DIFFERENT OBJECTS (ie lowbwt_2, lowbwt_3) LIKE THE LAST ASSIGNMENT SO YOU CAN REFER TO EACH ONE EASILY. 
+#keep track of the odds radios, the significance of the variables you add, the model significance (modelsig), and the diagnostics (logisticPseudoR2s)
+
+#--------------------------------
+#FINAL MODEL
+
+#in addition to the above diagnostics (modelsig and LogisticPseudoR2s), check the hosmer lemeshow goodness of fit test (HLChi) score from the gof() function. see notes for an explanation of hosmer lemeshow.
+
+gof(final_model, g=10, plotROC = FALSE)
+
+#also, create a variable out of the likelihood of Low birth weight in the final model. 
+
+lowbwt$predicted_probabilities_final <- fitted(final_model)
+
+#this gives us the likelihood that a case is a low birth weight baby based on this model.
+
+#we want to see its distribution, so lets see the quantile (see above)
+
+quantile(lowbwt$predicted_probabilities_final)
+
+#lets also plot our distribution of probability
+
+hist(lowbwt$predicted_probabilities_final)
+
+#how did we do?
+confusion.matrix(actual_outcomes, probability, threshold = 0.5)
+
+#this prints out our nice table that we can look at to see how well our model hit (correctly predicted) or missed (falsely predicted)
+#if we want to adjust the threshold to a different percent, we just adjust the threshold in the call. Here, we will lower it to .25. This means that any observation with a probability above .25 is considered a 1 (low birth weight), and below is considered a 0 (normal weight).
+
+confusion.matrix(actual_outcomes, probability, threshold = 0.25)
+
+#how does it change? Why would we want to change the threshold?
+
+
+#----------------------------
+#advanced (extra credit)
+
+#if we want to find out the ROC curve, we can easily plot it
+
+roc_curve <- roc(actual_outcomes, probability)
+
+plot(roc_curve)
+plot.roc(roc_curve)
+
+#what does this mean?
+
+#there are some very interesting interaction effects in this dataset. to do an interaction effect, create a new variable by multiplying two variables together
+#example:
+
+lowbwt$newvariable = lowbwt$interaction_1 * lowbwt$interaction_2
+
+#add an interaction variable to your model. how does it change your results?
+
+lowbwt_final <- glm(LOW~SMOKE + AGE + HT + black + other,data=lowbwt,family=binomial())

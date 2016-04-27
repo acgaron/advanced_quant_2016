@@ -1,0 +1,127 @@
+#clustering example
+
+#the fpc library will help with cluster evaluation
+#psych will help with analysis
+# and NbClust will help us determine number of clusters
+library(fpc)
+library(psych)
+library(NbClust)
+
+#import that data in there!
+states <- read.delim("~/Documents/The_New_School_M.S./Spring_2016/Advanced_Quant_TA/clustering/states.dat")
+
+View(states)
+
+states_clustering <- states[,c(4,30,31,32,33,35)]
+
+#now lets standardize the dataset by range scale
+
+#function for range scale
+
+range_scale <- function(x)
+{
+(x - min(x))/(max(x)-min(x))
+}
+
+states_cluster <- apply(states_clustering, 2, range_scale)
+
+states_cluster <- as.data.frame(states_cluster)
+
+
+#determining number of clusters
+wss <- (nrow(states_cluster)-1)*sum(apply(states_cluster,2,var))
+for (i in 2:10) wss[i] <- sum(kmeans(states_cluster, 
+  	centers=i)$withinss)
+plot(1:10, wss, type="b", xlab="Number of Clusters",
+  ylab="Within groups sum of squares")
+
+#or we can use a function from the NbClust package that gives a variety of methods of evaluation
+
+res<-NbClust(states_cluster, diss=NULL, distance = "euclidean", min.nc=3, max.nc=8,
+method = "kmeans", index = "all")
+
+#looks like three is the best, but we better check out all our solutions. 
+
+#now for the clustering
+
+#this applies K means to the dataset.
+cluster3 <- kmeans(states_cluster, 3) # 3 cluster solution
+
+
+# this gives us the means (remember they are by standard deviation) of each cluster so we can see how they differ
+aggregate(states_cluster,by=list(cluster3$cluster),FUN=mean)
+
+#this saves it as an object so we can refer to it later and compare to our other cluster solutions.
+# append cluster assignment
+cluster3_test <- data.frame(states_cluster, cluster3$cluster)
+
+#now we repeat each of these steps for each clustering solution we want. 
+
+
+#four clusters
+cluster4 <- kmeans(states_cluster, 4) # 4 cluster solution
+# get cluster means 
+aggregate(states_cluster,by=list(cluster4$cluster),FUN=mean)
+# append cluster assignment
+cluster4_test <- data.frame(states_cluster, cluster4$cluster)
+
+#five clusters
+cluster5 <- kmeans(states_cluster, 5) # 5 cluster solution
+# get cluster means 
+aggregate(states_cluster,by=list(cluster5$cluster),FUN=mean)
+# append cluster assignment
+cluster5_test <- data.frame(states_cluster, cluster5$cluster)
+
+#six clusters
+cluster6 <- kmeans(states_cluster, 6) # 6 cluster solution
+# get cluster means 
+aggregate(states_cluster,by=list(cluster6$cluster),FUN=mean)
+# append cluster assignment
+cluster6_test <- data.frame(states_cluster, cluster6$cluster)
+
+#7 clusters
+
+cluster7 <- kmeans(states_cluster, 7) # 7 cluster solution
+# get cluster means 
+aggregate(states_cluster,by=list(cluster7$cluster),FUN=mean)
+# append cluster assignment
+cluster7_test <- data.frame(states_cluster, cluster7$cluster)
+
+
+#8 clusters
+
+cluster8 <- kmeans(states_cluster, 8) # 8 cluster solution
+# get cluster means 
+aggregate(states_cluster,by=list(cluster8$cluster),FUN=mean)
+# append cluster assignment
+cluster8_test <- data.frame(states_cluster, cluster8$cluster)
+
+
+#now we want to compare these plots to each other
+plotcluster(states_cluster, cluster3$cluster)
+plotcluster(states_cluster, cluster4$cluster)
+plotcluster(states_cluster, cluster5$cluster)
+plotcluster(states_cluster, cluster6$cluster)
+plotcluster(states_cluster, cluster7$cluster)
+plotcluster(states_cluster, cluster8$cluster)
+
+
+#now we will rejoin cluster groups with their unstandardized scores
+states_3cluster <- data.frame(states, cluster3$cluster)
+states_4cluster <- data.frame(states, cluster4$cluster)
+states_5cluster <- data.frame(states, cluster5$cluster)
+states_6cluster <- data.frame(states, cluster6$cluster)
+states_7cluster <- data.frame(states, cluster7$cluster)
+states_8cluster <- data.frame(states, cluster8$cluster)
+
+
+
+#now lets look at values within specific cluster divides -- IE how do they differ?
+
+#this does a great job of helping us compare summary statistics across cluster
+summary_stats_3_clusters <- describeBy(states_3cluster,states_3cluster$cluster3, mat = TRUE)
+summary_stats_4_clusters <- describeBy(states_4cluster,states_4cluster$cluster4, mat = TRUE)
+summary_stats_5_clusters <- describeBy(states_5cluster,states_5cluster$cluster5, mat = TRUE)
+summary_stats_6_clusters <- describeBy(states_6cluster,states_6cluster$cluster6, mat = TRUE)
+summary_stats_7_clusters <- describeBy(states_7cluster,states_7cluster$cluster7, mat = TRUE)
+summary_stats_8_clusters <- describeBy(states_8cluster,states_8cluster$cluster8, mat = TRUE)

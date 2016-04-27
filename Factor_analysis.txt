@@ -1,0 +1,111 @@
+#FACTOR ANALYSIS ASSIGNMENT
+
+
+#hi everyone, and welcome to the factor analysis problem set. 
+
+#packages
+install.packages("psych")
+install.packages("GPArotation")
+install.packages("corpcor")
+
+library("psych")
+library("GPArotation")
+library("corpcor")
+
+CourseEvaluationData <- read.csv("~/Documents/The_New_School_M.S./Spring_2016/Advanced_Quant_TA/Factor Analysis/Assignment/CourseEvaluationData.csv")
+
+#let's first reduce the dataset to the variables that we wish to analyze using this method.
+
+ced_likerts_for_analysis <- CourseEvaluationData[,20:28]
+
+#create a correlation matrix for analysis
+
+ced_matrix <- cor(ced_likerts_for_analysis)
+#make it a little more readable by reducing # of decimal places
+#ced is an abbreviatioon of CourseEvaluationData
+ced_matrix <- round(ced_matrix, 2)
+
+View(ced_matrix)
+
+#1)	Interpret the Kaiser-Meyer-Olkin measure of sampling adequacy, Bartlett’s test of Sphericity, and determinant in this case. What do these mean?
+
+
+#Kaiser-Meyer-Olkin
+
+KMO(ced_likerts_for_analysis)
+
+#Bartlett's test of Sphericity
+cortest.bartlett(ced_likerts_for_analysis)
+
+#determinant
+det(ced_matrix)
+
+
+#2)	How many factors  (components) should you choose? Why? 
+#we will be using a varimax rotation.
+
+pc1 <- principal(ced_likerts_for_analysis, nfactors = 9, rotate = "varimax")
+
+#print the output just by stating the name of the object we created. This will list the relevant information in the console.
+
+pc1
+
+#what about our eigenvalues?
+
+print(pc1$values)
+
+#plot of eigenvalues
+plot(pc1$values, type = "b")
+
+#Based on your interpretation of your eigenvalues, change the nfactors to the number of factors you wish to specify. 
+#use a varimax rotation for your chosen # of factors, as demonstrated below.
+
+pc2 <- principal(ced_likerts_for_analysis, nfactors = INSERT_NUMBER_OF_FACTORS_YOU_WANT_HERE, rotate = "varimax")
+
+pc2 <- principal(ced_likerts_for_analysis, nfactors = 3, rotate = "varimax", scores = TRUE)
+
+#print our results
+pc2
+
+
+#3) Do the communalities concern you for any of the variables? 
+
+#examine h2 in output.
+
+#4)	What percentage of the variance does your factor solution explain?
+
+#examine second part of output.
+
+#5)	Did the factors achieve simple structure? (no item cross load at .4 or more)
+
+print.psych(pc2, cut = .4, sort = TRUE)
+
+#interpret results in console
+
+#6)	Explain all three factors in plain English. Use the rotated factor solution in this determination. A paragraph will suffice.
+
+#no R code
+
+#7)	Do you have any concerns about reverse coding?
+
+#no R code
+
+#8)	Perform a reliability analysis (using Cronbach’s Alpha) for your factors that are composed of more than two variables
+
+factor1 <- ced_likerts_for_analysis[, c(1,2,3,4,5)]
+factor2 <- ced_likerts_for_analysis[, c(7,6,9)]
+
+alpha(factor1)
+alpha(factor2)
+
+#9)	Advanced extenstion: regress each of the three factors (three regressions) on whether the professor was Male, salary, and years of experience. What do the results show?
+
+CourseEvaluationData <- cbind(CourseEvaluationData, pc2$scores)
+
+#use previous regression instructions from assignment 1.
+
+#10)	 Write up your results in a page or less. Use Andy Field’s examples as a guide. 
+
+
+
+ 
